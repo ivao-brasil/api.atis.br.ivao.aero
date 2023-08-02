@@ -1,9 +1,8 @@
 {
   "name": "api.atis.br.ivao.aero",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
-  "private": true,
+  "description": "API for the ATIS generator service of IVAO Brazil",
+  "author": "IVAO BR",
   "license": "UNLICENSED",
   "scripts": {
     "build": "cross-env NODE_ENV=production nest build",
@@ -25,10 +24,13 @@
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.0.0",
+    "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^10.0.0",
     "axios": "^1.4.0",
+    "mysql2": "^3.5.2",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "typeorm": "^0.3.17"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
