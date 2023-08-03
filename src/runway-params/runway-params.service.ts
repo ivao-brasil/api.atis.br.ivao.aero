@@ -1,7 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Repository, FindOptionsWhere } from 'typeorm';
-import { CreateRunwayParamDto } from './dto/create-runway-param.dto';
-import { UpdateRunwayParamDto } from './dto/update-runway-param.dto';
 import { RunwayParam } from './entities/runway-param.entity';
 
 @Injectable()
@@ -12,8 +10,9 @@ export class RunwayParamsService {
     private runwayRepository: Repository<RunwayParam>,
   ) {}
 
-  create(runwayParamDto: CreateRunwayParamDto) {
-    return 'This action adds a new runwayParam';
+  async create(runwayParam: RunwayParam) {
+    console.log(runwayParam);
+    await this.runwayRepository.insert(runwayParam);
   }
 
   findOne(icaoId: string, runwayId: string): Promise<RunwayParam | null> {
@@ -23,11 +22,17 @@ export class RunwayParamsService {
     } as FindOptionsWhere<any>);
   }
 
-  update(id: number, updateRunwayParamDto: UpdateRunwayParamDto) {
-    return `This action updates a #${id} runwayParam`;
+  async update(runwayParam: RunwayParam) {
+    await this.runwayRepository.update({
+      icaoCode: runwayParam.icaoCode,
+      runway: runwayParam.runway,
+    }, runwayParam);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} runwayParam`;
+  async remove(icaoCode: string, runway: string) {
+    await this.runwayRepository.delete({
+      icaoCode: icaoCode,
+      runway: runway,
+    });
   }
 }
