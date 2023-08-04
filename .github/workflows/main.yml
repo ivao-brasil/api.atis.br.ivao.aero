@@ -1,9 +1,9 @@
 on:
   push:
       branches:
-        - stage
+        - main
 
-name: 🚀 Deploy to Stage
+name: 🚀 Deploy to Main
 
 jobs:
   deploy:
