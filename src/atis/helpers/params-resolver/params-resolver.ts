@@ -1,4 +1,4 @@
-import { SplittedMetar } from "src/interfaces/splittedMetar.interface";
+import { SplittedMetar } from "src/atis/interfaces/splittedMetar.interface";
 
 export class ParamsResolver {
 
