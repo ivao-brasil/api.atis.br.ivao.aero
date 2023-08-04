@@ -1,0 +1,34 @@
+on:
+  push:
+      branches:
+        - stage
+
+name: 🚀 Deploy to Stage
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install --production
+
+    - name: Build Project
+      env:
+        CI: false
+        NODE_ENV: ${{ secrets.NODE_ENV }}
+      run: npm run build:stage
+
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@4.1.0
+      with:
+        server: ${{ secrets.FTP_HOST }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: dist/
+        server-dir: /
