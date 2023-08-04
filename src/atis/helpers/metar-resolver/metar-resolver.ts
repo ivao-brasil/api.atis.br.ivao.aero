@@ -1,4 +1,4 @@
-import { SplittedMetar } from "src/interfaces/splittedMetar.interface";
+import { SplittedMetar } from "src/atis/interfaces/splittedMetar.interface";
 import { RunwayParam } from "src/runway-params/entities/runway-param.entity";
 
 export class MetarResolver {
