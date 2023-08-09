@@ -12,9 +12,7 @@ const ENV = process.env.NODE_ENV;
   imports: [
     AuthModule,
     AtisModule,
-    ConfigModule.forRoot({
-      envFilePath: `.env.${ENV}`
-    }),
+    ConfigModule.forRoot({ignoreEnvFile: true}),
     DatabaseConnectionModule,
     RunwayParamsModule
   ],
