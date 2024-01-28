@@ -3,8 +3,7 @@ import { AuthModule } from './auth/auth.module';
 import { AtisModule } from './atis/atis.module';
 import { AuthMiddleware } from './auth/auth.middleware';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseConnectionModule } from './database-connection/database-connection.module';
-import { RunwayParamsModule } from './runway-params/runway-params.module';
+import { ParamsModule } from './api/params/params.module';
 
 const ENV = process.env.NODE_ENV;
 
@@ -15,8 +14,7 @@ const ENV = process.env.NODE_ENV;
     ConfigModule.forRoot({
       envFilePath: `.env.${ENV}`
     }),
-    DatabaseConnectionModule,
-    RunwayParamsModule
+    ParamsModule,
   ],
   controllers: [],
   providers: [],

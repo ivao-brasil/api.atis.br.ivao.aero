@@ -23,6 +23,7 @@ export class AuthMiddleware implements NestMiddleware {
             req['isAdmin'] = ivaoRes.data.staff.length > 0;
             next();
           }
+          console.log('ivaoRes', ivaoRes.data);
         },
         error: () => res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR),
       });
