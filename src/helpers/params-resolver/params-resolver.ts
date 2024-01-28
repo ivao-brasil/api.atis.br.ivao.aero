@@ -2,11 +2,11 @@ import { SplittedMetar } from "src/interfaces/splittedMetar.interface";
 
 export class ParamsResolver {
 
-  resolveParamsBasedOnMetar(paramsTree: any, splittedMetar: SplittedMetar): boolean {
+  static resolveParamsBasedOnMetar(paramsTree: any, splittedMetar: SplittedMetar): boolean {
     return this.resolveTree(paramsTree, splittedMetar);
   }
 
-  private resolveTree(node: any, splittedMetar: SplittedMetar, type: string = 'some'): boolean {
+  private static  resolveTree(node: any, splittedMetar: SplittedMetar, type: string = 'some'): boolean {
     
     return (Object.keys(node) as any[])[type as any]((childNode: any) => {
       if (typeof node[childNode] === 'object') {
@@ -21,7 +21,7 @@ export class ParamsResolver {
     });
   };
 
-  private resolveLeaf(type: string, condition: string, splittedMetar: SplittedMetar): boolean {
+  private static resolveLeaf(type: string, condition: string, splittedMetar: SplittedMetar): boolean {
     const [operator, value] = /(^[\<\=\>][\<\=\>]?)?(.+)+/
       .exec(condition)!
       .slice(1, 3);
@@ -43,15 +43,15 @@ export class ParamsResolver {
     return false;
   };
 
-  private checkGreaterThan(type: string, condition: string, splittedMetar: any): boolean {
+  private static checkGreaterThan(type: string, condition: string, splittedMetar: any): boolean {
     return +splittedMetar[type] > +condition;
   };
 
-  private checkLessThan(type: string, condition: string, splittedMetar: any): boolean {
+  private static checkLessThan(type: string, condition: string, splittedMetar: any): boolean {
     return +splittedMetar[type] < +condition;
   };
 
-  private checkEqualsTo(type: string, condition: string, splittedMetar: any): boolean {
+  private static checkEqualsTo(type: string, condition: string, splittedMetar: any): boolean {
     return splittedMetar[type] == condition;
   };
 }

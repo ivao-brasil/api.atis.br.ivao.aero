@@ -17,6 +17,7 @@ export class AuthMiddleware implements NestMiddleware {
       .validateAccessToken(req.headers['authorization'])
       .subscribe({
         next: (ivaoRes: AxiosResponse) => {
+          console.log('ivaoRes', ivaoRes.data);
           if (ivaoRes.data.result === 0) {
             res.sendStatus(HttpStatus.FORBIDDEN);
           } else {
@@ -25,7 +26,10 @@ export class AuthMiddleware implements NestMiddleware {
           }
           console.log('ivaoRes', ivaoRes.data);
         },
-        error: () => res.sendStatus(HttpStatus.INTERNAL_SERVER_ERROR),
+        error: (err) => {
+          console.log(err);
+          res.sendStatus(HttpStatus.UNAUTHORIZED);
+        },
       });
   }
 }

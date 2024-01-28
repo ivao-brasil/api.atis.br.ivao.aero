@@ -1,9 +1,9 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
-import { AtisModule } from './atis/atis.module';
 import { AuthMiddleware } from './auth/auth.middleware';
 import { ConfigModule } from '@nestjs/config';
 import { ParamsModule } from './api/params/params.module';
+import { AtisModule } from './api/atis/atis.module';
 
 const ENV = process.env.NODE_ENV;
 
@@ -14,13 +14,12 @@ const ENV = process.env.NODE_ENV;
     ConfigModule.forRoot({
       envFilePath: `.env.${ENV}`
     }),
-    ParamsModule,
+    ParamsModule
   ],
   controllers: [],
-  providers: [],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(AuthMiddleware).forRoutes('atis', 'runway-params');
+    //consumer.apply(AuthMiddleware).forRoutes('atis', 'params');
   }
 }
