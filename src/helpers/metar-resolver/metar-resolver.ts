@@ -1,13 +1,17 @@
 import { SplittedMetar } from "src/interfaces/splittedMetar.interface";
 
 export class MetarResolver {
-  private static readonly mainRegex = /^(?<type>METAR|SPECI)\s(?<aerodrome>\w{4})\s(?<datetime>\d{6}Z)\s(?<wind>\/{5}|VRB\w{4}|\d{5}(?:KT|MPS|G\d{2}\w*)\s?(?:\d{3}V\d{3})?)\s?(?<visibility>(?:\d{4}|\d{2}SM)\s?(?:\d{4}\w{0,2}){0,4}\s?(?:R\d{2}\/\w\d{4})*)\s(?<rain>\+?\-?[A-Z]*\s)?\s?(?<clouds>(?:[A-Z]{3}\d{3}(?:CB|TCU)?\s?)*)\s?(?<temperature>M?\d{2})\/(?<drewpoint>M?\d{2})\s?(?<baro>\w{5})\s?(?<recentweather>RE\w{2})?\s(?<remarks>.*)?/;
-
-  static splitMetarOnRunway(metar: string, runwayHeading: number): SplittedMetar {
-    const groups = this.mainRegex.exec(metar)?.groups || {};
+  private static readonly regex = {
+    ICAO: {
+      main: /^(?<type>METAR\s|SPECI\s)?(?<airport>\w{4})\s(?<timestamp>\d{6}Z)\s(?<is_auto>AUTO\s)?(?<wind>(?:(?:P?[\d\/]{5}(?:G[\d\/]{2})?KT)|VRB[\d\/]{2}KT)(?:\s[\d\/]{3}V[\d\/]{3})?)\s(?<is_cavok>CAVOK\s)?(?<visibility>[\d\/]{4}\s(?:\d{4}[A-Z]{1,2}\s)?)?(?<rvr>R[\d\/]{2}\w?\/P?[\d\/]{4}(?:V[\d\/]{4})?[DUN]?\s)*(?<weather_state>(?:\+|\-|V)?(?:MI|PR|BC|DR|BL|SH|TS|FZ)?[A-Z\/]{2}\s)*(?<clouds>NCD\s|NSC\s|VV[\d\/]{3}\s|(?:(?:FEW|BKN|SCT|OVC|\/{3})[\d\/]{0,3}(?:CB|TCU|\/{3})?\s)*)?(?<temperature>M?[\d\/]{2}\/M?[\d\/]{2}\s)(?<pressure>Q[\d\/]{4})\s?(?<remarks>.*)$/,
+      wind: /^(?<direction>\d{3})(?<nominalSpeed>\d{2,3})G?(?<gustSpeed>\d{2,3})?KT\s?(?<variationStart>\d{3})?V?(?<variationEnd>\d{3})?$/
+    }
+  };
+  static splitMetarOnRunway(metar: string, runwayHeading: number, magDeclination: number): SplittedMetar {
+    const groups = this.regex.ICAO.main.exec(metar)?.groups || {};
     let splittedMetar: any = {};
     if(groups.wind) {
-      splittedMetar = this.transformWind(groups.wind, 0, runwayHeading, splittedMetar);
+      splittedMetar = this.transformWind(groups.wind, magDeclination, runwayHeading, splittedMetar);
     }
     return splittedMetar;
   }
@@ -43,9 +47,7 @@ export class MetarResolver {
   };
 
   private static transformWind(metarWind: string, magDeclination: number, runwayHeading: number, splittedMetar: SplittedMetar): SplittedMetar {
-    const windRegex =
-      /^(?<direction>\d{3})(?<nominalSpeed>\d{2,3})G?(?<gustSpeed>\d{2,3})?KT\s?(?<variationStart>\d{3})?V?(?<variationEnd>\d{3})?$/;
-    const groups: any = windRegex.exec(metarWind)?.groups || '';
+    const groups: any = this.regex.ICAO.wind.exec(metarWind)?.groups || '';
     const magWindDirection = magDeclination + +groups.direction;
     const windDelta = this.getWindDelta(magWindDirection, runwayHeading);
 
