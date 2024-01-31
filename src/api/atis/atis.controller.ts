@@ -22,7 +22,7 @@ export class AtisController {
         const atisInfo: AtisInfo = {
             icao: airportIcao,
             metar: metar,
-            runways: this.handleRunwayWindParams(runwayParams, metar),
+            runways: await this.handleRunway(runwayParams, metar),
             remarks: '',
             digitalAtis: ''
         }
@@ -45,6 +45,21 @@ export class AtisController {
         });
     }
 
+    private async getRunwaysProcedures(airportIcao: string): Promise<any> {
+        return await atisDatabase.models.procedures.findAll({
+            where: {
+                airport_icao: airportIcao
+            }
+        });
+    }
+
+    private async handleRunway(runwayParams: any, metar: string) {
+        let runways: any = this.handleRunwayWindParams(runwayParams, metar);
+        runways = await this.handleRunwayProcedures(runwayParams[0].airport_icao, runways);
+
+        return runways;
+    }
+
     private handleRunwayWindParams(runwayParams: any, metar: string): any {
         const runways:any = {};
         runwayParams.forEach((singleRunwayParams: any) => {
@@ -52,7 +67,22 @@ export class AtisController {
             if(!(singleRunwayParams.runway in runways)){
                 runways[`${singleRunwayParams.runway}`] = {};
             }
-            runways[`${singleRunwayParams.runway}`][singleRunwayParams.type] = ParamsResolver.resolveParamsBasedOnMetar(singleRunwayParams.param, splittedMetar);
+            runways[`${singleRunwayParams.runway}`][singleRunwayParams.type] = {
+                active: ParamsResolver.resolveParamsBasedOnMetar(singleRunwayParams.param, splittedMetar)
+            };
+        });
+        return runways;
+    }
+
+    private async handleRunwayProcedures(airportIcao: string, runways: any) {
+        const procedures = await this.getRunwaysProcedures(airportIcao);
+        procedures.forEach((procedure: any) => {
+            if(runways[procedure.runway] && runways[procedure.runway][procedure.type]){
+                if(!runways[procedure.runway][procedure.type].procedures){
+                    runways[procedure.runway][procedure.type].procedures = [];
+                }
+                runways[procedure.runway][procedure.type].procedures.push(procedure.procedure);
+            }
         });
         return runways;
     }
