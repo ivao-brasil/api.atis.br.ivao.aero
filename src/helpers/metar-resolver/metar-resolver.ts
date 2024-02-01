@@ -7,11 +7,13 @@ export class MetarResolver {
       wind: /^(?<direction>\d{3})(?<nominalSpeed>\d{2,3})G?(?<gustSpeed>\d{2,3})?KT\s?(?<variationStart>\d{3})?V?(?<variationEnd>\d{3})?$/
     }
   };
-  static splitMetarOnRunway(metar: string, runwayHeading: number, magDeclination: number): SplittedMetar {
-    const groups = this.regex.ICAO.main.exec(metar)?.groups || {};
-    let splittedMetar: any = {};
-    if(groups.wind) {
-      splittedMetar = this.transformWind(groups.wind, magDeclination, runwayHeading, splittedMetar);
+  static splitMetar(metar: string) {
+    return this.regex.ICAO.main.exec(metar)?.groups || {};
+  }
+
+  static splitMetarOnRunway(splittedMetar: any, runwayHeading: number, magVariation: number): SplittedMetar {
+    if(splittedMetar.wind) {
+      splittedMetar = this.transformWind(splittedMetar.wind, magVariation ?? 0, runwayHeading, splittedMetar);
     }
     return splittedMetar;
   }
@@ -46,9 +48,9 @@ export class MetarResolver {
     );
   };
 
-  private static transformWind(metarWind: string, magDeclination: number, runwayHeading: number, splittedMetar: SplittedMetar): SplittedMetar {
+  private static transformWind(metarWind: string, magVariation: number, runwayHeading: number, splittedMetar: SplittedMetar): SplittedMetar {
     const groups: any = this.regex.ICAO.wind.exec(metarWind)?.groups || '';
-    const magWindDirection = magDeclination + +groups.direction;
+    const magWindDirection = magVariation + +groups.direction;
     const windDelta = this.getWindDelta(magWindDirection, runwayHeading);
 
     splittedMetar.trueWindDirection = groups.direction;

@@ -9,7 +9,7 @@ export class AirportService {
     constructor(private readonly httpService: HttpService, private readonly configService: ConfigService) {}
 
     getAirportInfo(icao: string, authorization: string): Observable<any> {
-        return this.httpService.get(`${this.configService.get<string>('API_SERVER')}/v2/airports/${icao}`, {
+        return this.httpService.get(`${this.configService.get<string>('API_SERVER')}/airports/${icao}`, {
             headers: {
                 Authorization: authorization
             }

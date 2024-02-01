@@ -5,15 +5,10 @@ const atisDatabase: Sequelize = require('atis-database').sequelize;
 
 @Controller('airport/:airport_icao')
 export class AirportController {
-    private readonly alphabet: string[] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
     @Get()
     async getParamsFromAirport(@Param('airport_icao') airport: string): Promise<any>{
-        return await atisDatabase.models.airport.findOne({
-            where: {
-                airport_icao: airport
-            }
-        });
+        return await atisDatabase.models.airport.findByPk(airport);
     }
 
     @Post()
@@ -36,8 +31,5 @@ export class AirportController {
         });
     }
 
-    private incrementChar(c: string) {
-        var index = this.alphabet.indexOf(c);
-        return this.alphabet[index + 1 % this.alphabet.length]
-    }
+    
 }
