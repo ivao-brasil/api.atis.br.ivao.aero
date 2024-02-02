@@ -15,4 +15,12 @@ export class AirportService {
             }
         });
     }
+
+    getAllAirportsInfo(authorization: string): Observable<any> {
+        return this.httpService.get(`${this.configService.get<string>('API_SERVER')}/airports/all`, {
+            headers: {
+                Authorization: authorization
+            }
+        });
+    }
 }

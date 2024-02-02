@@ -4,9 +4,7 @@ import { AuthMiddleware } from './auth/auth.middleware';
 import { ConfigModule } from '@nestjs/config';
 import { ParamsModule } from './api/params/params.module';
 import { AtisModule } from './api/atis/atis.module';
-import { ProceduresController } from './api/procedures/procedures.controller';
 import { ProceduresModule } from './api/procedures/procedures.module';
-import { AirportController } from './api/airport/airport.controller';
 import { AirportModule } from './api/airport/airport.module';
 
 const ENV = process.env.NODE_ENV;
@@ -21,8 +19,7 @@ const ENV = process.env.NODE_ENV;
     ParamsModule,
     ProceduresModule,
     AirportModule
-  ],
-  controllers: [AirportController],
+  ]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
