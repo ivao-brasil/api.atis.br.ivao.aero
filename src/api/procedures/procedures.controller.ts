@@ -7,7 +7,6 @@ const atisDatabase: Sequelize = require('atis-database').sequelize;
 export class ProceduresController {
     @Get()
     async getProceduresFromAirport(@Param('airport_icao') airport: string): Promise<any>{
-        console.log(atisDatabase.models);
         return await atisDatabase.models.procedures.findAll({
             where: {
                 airport_icao: airport

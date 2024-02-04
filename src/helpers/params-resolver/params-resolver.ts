@@ -1,4 +1,4 @@
-import { SplittedMetar } from "src/interfaces/splittedMetar.interface";
+import { SplittedMetar } from "src/interfaces/splitted-metar.interface";
 
 export class ParamsResolver {
 
@@ -44,14 +44,30 @@ export class ParamsResolver {
   };
 
   private static checkGreaterThan(type: string, condition: string, splittedMetar: any): boolean {
-    return +splittedMetar[type] > +condition;
+    return +this.getMetarValue(type,splittedMetar) > +condition;
   };
 
   private static checkLessThan(type: string, condition: string, splittedMetar: any): boolean {
-    return +splittedMetar[type] < +condition;
+    return +this.getMetarValue(type,splittedMetar) < +condition;
   };
 
   private static checkEqualsTo(type: string, condition: string, splittedMetar: any): boolean {
-    return splittedMetar[type] == condition;
+    return this.getMetarValue(type,splittedMetar) == condition;
   };
+
+  private static getMetarValue(type: string, splittedMetar: any): any {
+    const splittedType = type.split('.');
+
+    let currentObj = splittedMetar;
+
+    for (const key of splittedType) {
+      if (currentObj.hasOwnProperty(key)) {
+        currentObj = currentObj[key];
+      } else {
+        currentObj = null;
+        break;
+      }
+    }
+    return currentObj;
+  }
 }

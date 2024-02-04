@@ -1,10 +1,12 @@
-import { Controller, Get, Headers, Inject, Param, Put } from '@nestjs/common';
+import { Controller, Get, Headers, Param, Put, Res } from '@nestjs/common';
 import { MetarResolver } from 'src/helpers/metar-resolver/metar-resolver';
 import { Sequelize } from 'sequelize';
 import { MetarService } from 'src/services/metar/metar.service';
 import { lastValueFrom, map } from 'rxjs';
 import { ParamsResolver } from 'src/helpers/params-resolver/params-resolver';
-import { SplittedMetar } from 'src/interfaces/splittedMetar.interface';
+import { SplittedMetar } from 'src/interfaces/splitted-metar.interface';
+import { Response } from 'express';
+import { PartiallySplittedMetar } from 'src/interfaces/partially-splitted-metar.interface';
 
 const atisDatabase: Sequelize = require('atis-database').sequelize;
 
@@ -13,11 +15,43 @@ export class AtisController {
 
     private readonly alphabet: string[] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
+    private readonly units: {ICAO: any, FAA: any} = {
+        ICAO: {
+            length: 'M',
+            speed: 'KT',
+            pressure: 'HPA'
+        },
+        FAA: {
+            length: 'FT',
+            speed: 'KTS',
+            pressure: 'IN-HG'
+        }
+    }
+
     constructor(private readonly metarService: MetarService) {}
 
     @Get(':icaoId/digital')
-    async getDigitalAtis(@Param('icaoId') airportIcao: string, @Headers("authorization") authorization: string): Promise<any> {
-        
+    async getDigitalAtis(@Param('icaoId') airportIcao: string, @Res() response: Response) {
+        const atis = await atisDatabase.models.Atis.findOne({
+            where: {
+                airport_icao: airportIcao
+            },
+            attributes: ['digital_atis', 'metar', 'char_id', 'runways', 'airport_icao'],
+            include: [
+                {
+                    model: atisDatabase.models.Airport,
+                    attributes: [],
+                    on: { general_id: Sequelize.literal('`Atis`.`general_id` = `Airport`.`current_atis`') },
+                    required: true
+                }
+            ]
+        });
+        if(!atis){
+            response.status(404).send('ATIS not found');
+            return;
+        }
+        response.status(200).send(atis);
+        return atis;
     }
 
     @Put('update')
@@ -59,7 +93,6 @@ export class AtisController {
         });
 
         await Object.keys(allAirportsRunwaysParams).forEach(async (airportIcao) => {
-            console.log(allAirportsRunwaysParams[airportIcao]);
             if(allAirportsRunwaysParams[airportIcao].metar){
                 const airport = await atisDatabase.models.Airport.findOne({
                     where: {
@@ -67,22 +100,23 @@ export class AtisController {
                     },
                     include: [
                         {
+                            as: 'Atis',
                             model: atisDatabase.models.Atis,
                             attributes: ['char_id'],
-                            on: { current_atis: Sequelize.col('Ati.general_id') },
+                            on: { general_id: Sequelize.literal('`Atis`.`general_id` = `Airport`.`current_atis`') },
                             required: false
                         }
                     ]
                 });
-                const splittedMetar:SplittedMetar = MetarResolver.splitMetar(allAirportsRunwaysParams[airportIcao].metar);
+                const partialSplittedMetar:PartiallySplittedMetar = MetarResolver.splitMetar(allAirportsRunwaysParams[airportIcao].metar, 'ICAO');
+                const splittedMetar = MetarResolver.processSplittedMetar(partialSplittedMetar, 0, airport?.dataValues.mag_variation, 'ICAO');
                 const runwaysList = await this.handleRunway(allAirportsRunwaysParams[airportIcao].runways, splittedMetar, airport?.dataValues.mag_variation);
-
-                const charId = airport!.dataValues.char_id ? this.incrementChar(airport!.dataValues.char_id) : airportIcao[3];
+                const charId = airport!.dataValues.Atis.dataValues.char_id ? this.incrementChar(airport!.dataValues.Atis.dataValues.char_id) : airportIcao[3];
                 const addedAtis = {
                     airport_icao: airportIcao,
                     char_id: charId,
                     runways: runwaysList,
-                    digital_atis: this.buildDigitalAtis(airportIcao, splittedMetar, charId, runwaysList, airport?.dataValues.remarks),
+                    digital_atis: this.buildDigitalAtis(airportIcao, splittedMetar, charId, runwaysList, airport?.dataValues.remarks, 'ICAO'),
                     metar: allAirportsRunwaysParams[airportIcao].metar
                 };
                 console.log(`Added ATIS for ${airportIcao} with char_id ${charId}`);
@@ -105,22 +139,21 @@ export class AtisController {
         return await atisDatabase.models.Procedures.findAll();
     }
 
-    private async handleRunway(runwayParams: any, splittedMetar: any, magVariation: number) {
+    private async handleRunway(runwayParams: any, splittedMetar: SplittedMetar, magVariation: number) {
         let runways: any = this.handleRunwayWindParams(runwayParams, splittedMetar, magVariation);
         runways = await this.handleRunwayProcedures(runwayParams[0].airport_icao, runways);
 
         return runways;
     }
 
-    private handleRunwayWindParams(runwayParams: any, splittedMetar: any, magVariation: number): any {
+    private handleRunwayWindParams(runwayParams: any, splittedMetar: SplittedMetar, magVariation: number): any {
         const runways:any = {};
         runwayParams.forEach((singleRunwayParams: any) => {
-            const splittedMetarOnRunway = MetarResolver.splitMetarOnRunway(splittedMetar, singleRunwayParams.magnetic_hdg, magVariation);
             if(!(singleRunwayParams.runway in runways)){
                 runways[`${singleRunwayParams.runway}`] = {};
             }
             runways[`${singleRunwayParams.runway}`][singleRunwayParams.type] = {
-                active: ParamsResolver.resolveParamsBasedOnMetar(singleRunwayParams.param, splittedMetarOnRunway)
+                active: ParamsResolver.resolveParamsBasedOnMetar(singleRunwayParams.param, splittedMetar)
             };
         });
         return runways;
@@ -139,29 +172,12 @@ export class AtisController {
         return runways;
     }
 
-    private async getValidAtis(airport: string): Promise<any | undefined> {
-        return await atisDatabase.models.Atis.findOne({
-            attributes: ['char_id', 'runways', 'digital_atis', 'metar'],
-            where: {
-                airport_icao: airport
-            },
-            include: [
-                {
-                    model: atisDatabase.models.Airport,
-                    attributes: ['remarks'],
-                    where: { general_id: Sequelize.col('airport.current_atis') },
-                    required: true
-                }
-            ]
-        });
-    }
-
     private incrementChar(c: string) {
         var index = this.alphabet.indexOf(c);
         return this.alphabet[index + 1 % this.alphabet.length]
     }
-//SBGR ARR ATIS A 2249Z ATIS A EXP ILS Y RWY 28L APP/ LDG 28L DEP 28R IN USE TWY B CLSD BTN TWY P AND TWY Q CLR DELIVERY 1 2 1 DECIMAL 0 TOWER 1 3 5 DECIMAL 2 ACDM OPERATION IN PROGRESS WIND 300 09 KT VIS 10 KM OR MORE LGT RA FEW 2000 FT T 18 / DP 17 QNH 1020 HPA SEGREGATED OPERATION IN PROGRESS END OF ATIS A
-    private buildDigitalAtis(airportIcao: string, splittedMetar: any, charId: string, runwaysList: any, airportRemarks: any): string {
+    
+    private buildDigitalAtis(airportIcao: string, splittedMetar: SplittedMetar, charId: string, runwaysList: any, airportRemarks: any, type: 'ICAO' | 'FAA'): string {
         const landingRunways: any[] = [];
         const takeoffRunways: any[] = [];
         for (const runway in runwaysList) {
@@ -172,7 +188,19 @@ export class AtisController {
                 takeoffRunways.push(`${runwaysList[runway].TAKEOFF.procedures?.join(' ') || ''} RWY ${runway}`);
             }
         }
-        console.log(splittedMetar);
-        return `${airportIcao.toUpperCase()} ATIS ${charId} ${splittedMetar.timestamp} EXPECT ${landingRunways.join(' / ')} DEPARTURE ${takeoffRunways.join(' / ')} WIND ${splittedMetar.wind} ${splittedMetar.pressure} HPA ${airportRemarks ?? ''} END OF ATIS ${charId}`;
+        const windCompose = `${splittedMetar.wind!.magWindDirection} AT ${splittedMetar.wind!.nominalWindSpeed} KT${splittedMetar.wind!.gustSpeed! > 0 ? ` GUSTING AT ${splittedMetar.wind!.gustSpeed} KT` : ''}`;
+        let visiblitityCompose = '';
+        if(splittedMetar.visibility!.isCavok){
+            visiblitityCompose = 'CAVOK ';
+        }
+        else {
+            visiblitityCompose = `${splittedMetar.visibility!.horizontalVisibility!.general} ${this.units[type].length} `;
+            if(splittedMetar.visibility!.horizontalVisibility!.directional.length > 0){
+                visiblitityCompose += splittedMetar.visibility!.horizontalVisibility!.directional.map((direction: any) => `${direction.direction} ${direction.visibility} ${this.units[type].length} `).join(' ');
+            }
+        }
+        visiblitityCompose += splittedMetar.visibility!.cloudLayers.map((cloudLayer: any) => `${cloudLayer.type} ${cloudLayer.height} ${this.units[type].length} `).join(' ');
+        console.log(splittedMetar.time);
+        return `${airportIcao.toUpperCase()} AUTOMATIC ATIS ${charId} ${splittedMetar.time!.getUTCHours().toString().padStart(2, '0')}${splittedMetar.time!.getUTCMinutes().toString().padStart(2, '0')}Z EXPECT ARRIVAL ${landingRunways.join(' / ')} DEPARTURE ${takeoffRunways.join(' / ')} WIND ${windCompose} VIS ${visiblitityCompose}${splittedMetar.altimeter} ${this.units[type].pressure} ${airportRemarks ?? ''} END OF ATIS ${charId}`;
     }
 }

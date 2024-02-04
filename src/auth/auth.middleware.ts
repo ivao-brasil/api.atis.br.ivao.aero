@@ -17,17 +17,14 @@ export class AuthMiddleware implements NestMiddleware {
       .validateAccessToken(req.headers['authorization'])
       .subscribe({
         next: (ivaoRes: AxiosResponse) => {
-          console.log('ivaoRes', ivaoRes.data);
           if (ivaoRes.data.result === 0) {
             res.sendStatus(HttpStatus.FORBIDDEN);
           } else {
             req['isAdmin'] = ivaoRes.data.staff.length > 0;
             next();
           }
-          console.log('ivaoRes', ivaoRes.data);
         },
         error: (err) => {
-          console.log(err);
           res.sendStatus(HttpStatus.UNAUTHORIZED);
         },
       });
