@@ -115,7 +115,7 @@ export class AtisController {
                     const partialSplittedMetar:PartiallySplittedMetar = MetarResolver.splitMetar(allAirportsRunwaysParams[airportIcao].metar, 'ICAO');
                     const splittedMetar = MetarResolver.processSplittedMetar(partialSplittedMetar, 0, airport?.dataValues.mag_variation, 'ICAO');
                     const runwaysList = await this.handleRunway(allAirportsRunwaysParams[airportIcao].runways, splittedMetar, airport?.dataValues.mag_variation);
-                    const charId = airport!.dataValues.Atis.dataValues.char_id ? this.incrementChar(airport!.dataValues.Atis.dataValues.char_id) : airportIcao[3];
+                    const charId = airport!.dataValues.Atis?.dataValues.char_id ? this.incrementChar(airport!.dataValues.Atis.dataValues.char_id) : airportIcao[3];
                     const addedAtis = {
                         airport_icao: airportIcao,
                         char_id: charId,
@@ -123,10 +123,9 @@ export class AtisController {
                         digital_atis: this.buildDigitalAtis(airportIcao, splittedMetar, charId, runwaysList, airport?.dataValues.remarks, 'ICAO'),
                         metar: allAirportsRunwaysParams[airportIcao].metar
                     };
-                    this.logger.log(`Added ATIS for ${airportIcao} with char_id ${charId}`);
                     
                     await atisDatabase.models.Atis.create(addedAtis);
-                    await atisDatabase.query(`UPDATE airports SET current_atis = LAST_INSERT_ID() WHERE airport_icao = '${airportIcao}'`);
+                    this.logger.log(`Added ATIS for ${airportIcao} with char_id ${charId}`);
                 }
             });
         }
