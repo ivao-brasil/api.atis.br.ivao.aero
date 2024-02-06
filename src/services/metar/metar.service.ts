@@ -1,7 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
 @Injectable()
 export class MetarService {
@@ -16,11 +16,7 @@ export class MetarService {
         });
     }
 
-    getAllMetar(authorization: string): Observable<any> {
-        return this.httpService.get(`${this.configService.get<string>('API_SERVER')}/airports/all/metar`, {
-            headers: {
-                Authorization: authorization
-            }
-        });
+    getAllMetar(): Observable<any> {
+        return this.httpService.get(`https://api.ivao.aero/v2/airports/all/metar`);
     }
 }
