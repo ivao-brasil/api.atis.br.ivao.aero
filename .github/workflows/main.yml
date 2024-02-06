@@ -5,21 +5,33 @@ on:
       
 name: 🚀 Deploy to the Production enviroment
 jobs:
-  web-deploy:
+  install:
+    name: 🛠️ Build
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+    - name: Node Install
+      uses: actions/setup-node@v2
+      with:
+        node-version: 18
+    - name: 📦 Install dependencies
+      run: npm install
+  build:
+    needs: install
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+    - name: build
+      run: npm run build
+  deploy:
+    needs: install
     name: 🎉 Deploy
     runs-on: ubuntu-latest
     environment: main
-    node-version: '14'
     steps:
-    - name: 🚚 Get latest code
-      uses: actions/checkout@v2
-    - name: Node Install
-      uses: actions/checkout@v4
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18
-    - name: build
-      run: npm run build
     - name: 📂 Sync files
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
