@@ -6,7 +6,7 @@ on:
 name: 🚀 Deploy to the Production enviroment
 jobs:
   install:
-    name: 🛠️ Build
+    name: install
     runs-on: ubuntu-latest
     environment: main
     steps:
@@ -20,15 +20,15 @@ jobs:
       run: npm install
   build:
     needs: install
-    name: 🏗️ Build
+    name: build
     runs-on: ubuntu-latest
     environment: main
     steps:
     - name: build
       run: npm run build
   deploy:
-    needs: install
-    name: 🎉 Deploy
+    needs: build
+    name: deploy
     runs-on: ubuntu-latest
     environment: main
     steps:
