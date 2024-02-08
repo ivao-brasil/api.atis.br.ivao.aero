@@ -5,7 +5,7 @@ export class MetarResolver {
   private static readonly dataExpressions: {ICAO: any, FAA: any} = {
     ICAO: {
       main: /^(?<type>METAR\s|SPECI\s)?(?<airport>\w{4})\s(?<timestamp>\d{6}Z)\s(?<is_auto>AUTO\s)?(?<wind>(?:(?:P?[\d\/]{5}(?:G[\d\/]{2})?KT)|VRB[\d\/]{2}KT)(?:\s[\d\/]{3}V[\d\/]{3})?)\s(?<is_cavok>CAVOK\s)?(?<visibility>[\d\/]{4}\s(?:\d{4}[A-Z]{1,2}\s)?)?(?<rvr>R[\d\/]{2}\w?\/P?[\d\/]{4}(?:V[\d\/]{4})?[DUN]?\s)*(?<weather_state>(?:(?:\+|\-|V)?(?:MI|PR|BC|DR|BL|SH|TS|FZ)?[A-Z\/]{2}\s)*)?(?<clouds>NCD\s|NSC\s|VV[\d\/]{3}\s|(?:(?:FEW|BKN|SCT|OVC|\/{3})[\d\/]{0,3}(?:CB|TCU|\/{3})?\s)*)?(?<temperature>M?[\d\/]{2}\/M?[\d\/]{2}\s)(?<pressure>Q[\d\/]{4})\s?(?<remarks>.*)$/,
-      wind: /^(?<direction>\d{3})(?<nominalSpeed>\d{2,3})G?(?<gustSpeed>\d{2,3})?KT\s?(?<variationStart>\d{3})?V?(?<variationEnd>\d{3})?$/,
+      wind: /^(?<direction>(?:VRB|\d{3}|\/{3}))(?<nominal_speed>P?[\d\/]{2})G?(?<gust_speed>P?[\d\/]{2})?KT\s?(?:(?<variation_start>[\d\/]{3}))?V?(?:(?<variation_end>[\d\/]{3}))?$/,
       temperature: /(?<temperature>M?\d{2})\/(?<drewPoint>M?\d{2})/
     },
     FAA: {
@@ -97,20 +97,25 @@ export class MetarResolver {
     };
   }
 
-  private static transformWind(metarWind: string, magVariation: number, runwayHeading: number): Wind {
+  private static transformWind(metarWind: string, magVariation: number, runwayHeading: number): Wind | undefined {
     const groups: any = this.dataExpressions.ICAO.wind.exec(metarWind)?.groups || '';
-    let magWindDirection = magVariation + +groups.direction;
-    if(magWindDirection > 360) magWindDirection -= 360;
-    if(magWindDirection < 0) magWindDirection += 360;
-    const windDelta = this.getWindDelta(magWindDirection, runwayHeading);
+    if(groups.direction === '///') return undefined;
+    let windDelta = 0;
+    let magWindDirection = undefined;
+    if(groups.direction !== 'VRB'){
+      let magWindDirection = magVariation + +groups.direction;
+      if(magWindDirection > 360) magWindDirection -= 360;
+      if(magWindDirection < 0) magWindDirection += 360;
+      windDelta = this.getWindDelta(magWindDirection, runwayHeading);
+    }
 
     return {
-      trueWindDirection: groups.direction,
+      trueWindDirection: groups.direction !== 'VRB' ? +groups.direction : undefined,
       nominalWindSpeed: +groups.nominalSpeed,
       gustSpeed: +groups.gustSpeed,
       magWindDirection: magWindDirection,
-      headWindSpeed: this.getHeadWind(windDelta, +groups.nominalSpeed),
-      leftWindSpeed: this.getLeftWind(windDelta, +groups.nominalSpeed),
+      headWindSpeed: groups.direction !== 'VRB' ? this.getHeadWind(windDelta, +groups.nominalSpeed) : 0,
+      leftWindSpeed: groups.direction !== 'VRB' ? this.getLeftWind(windDelta, +groups.nominalSpeed) : 0,
       windDelta: Math.abs(windDelta),
     };
   };

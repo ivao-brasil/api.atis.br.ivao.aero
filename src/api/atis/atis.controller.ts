@@ -198,15 +198,24 @@ export class AtisController {
                 takeoffRunways.push(`${runwaysList[runway].TAKEOFF.procedures?.join(' ') || ''} RWY ${runway}`);
             }
         }
-        const windCompose = `${splittedMetar.wind!.magWindDirection} AT ${splittedMetar.wind!.nominalWindSpeed} KT${splittedMetar.wind!.gustSpeed! > 0 ? ` GUSTING AT ${splittedMetar.wind!.gustSpeed} KT` : ''}`;
-        let visiblitityCompose = '';
-        if(splittedMetar.visibility!.isCavok){
-            visiblitityCompose = 'CAVOK ';
+        let windCompose = '';
+        if(splittedMetar.wind){
+            if(splittedMetar.wind!.trueWindDirection){
+                windCompose = `VARIABLE AT ${splittedMetar.wind!.nominalWindSpeed} KT`;
+            }
+            windCompose = `${splittedMetar.wind!.magWindDirection} AT ${splittedMetar.wind!.nominalWindSpeed} KT${splittedMetar.wind!.gustSpeed! > 0 ? ` GUSTING AT ${splittedMetar.wind!.gustSpeed} KT` : ''}`;
         }
-        else {
-            visiblitityCompose = `${splittedMetar.visibility!.horizontalVisibility!.general} ${this.units[type].length} `;
-            if(splittedMetar.visibility!.horizontalVisibility!.directional.length > 0){
-                visiblitityCompose += splittedMetar.visibility!.horizontalVisibility!.directional.map((direction: any) => `${direction.direction} ${direction.visibility} ${this.units[type].length} `).join(' ');
+        
+        let visiblitityCompose = '';
+        if(splittedMetar.visibility){
+            if(splittedMetar.visibility!.isCavok){
+                visiblitityCompose = 'CAVOK ';
+            }
+            else {
+                visiblitityCompose = `${splittedMetar.visibility!.horizontalVisibility!.general} ${this.units[type].length} `;
+                if(splittedMetar.visibility!.horizontalVisibility!.directional.length > 0){
+                    visiblitityCompose += splittedMetar.visibility!.horizontalVisibility!.directional.map((direction: any) => `${direction.direction} ${direction.visibility} ${this.units[type].length} `).join(' ');
+                }
             }
         }
         visiblitityCompose += splittedMetar.visibility!.cloudLayers.map((cloudLayer: any) => `${cloudLayer.type} ${cloudLayer.height} ${this.units[type].length} `).join(' ');
