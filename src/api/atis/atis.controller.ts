@@ -33,6 +33,10 @@ export class AtisController {
 
     @Get(':icaoId/digital')
     async getDigitalAtis(@Param('icaoId') airportIcao: string, @Res() response: Response) {
+        if(airportIcao.length !== 4 || !airportIcao.match(/^[A-Z0-9]{4}$/)){
+            response.status(400).send('Invalid ICAO code');
+            return;
+        }
         const atis = await atisDatabase.models.Atis.findOne({
             where: {
                 airport_icao: airportIcao
