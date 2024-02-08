@@ -13,13 +13,15 @@ export interface SplittedMetar {
 }
 
 export interface Wind {
-  trueWindDirection?: number,
+  trueWindDirection?: string,
   magWindDirection?: number,
   nominalWindSpeed?: number,
   gustSpeed?: number,
   headWindSpeed?: number,
-  leftWindSpeed?: number
+  leftWindSpeed?: number,
   windDelta?: number,
+  variationStart?: number,
+  variationEnd?: number
 }
 
 export interface Visibility {

@@ -101,22 +101,27 @@ export class MetarResolver {
     const groups: any = this.dataExpressions.ICAO.wind.exec(metarWind)?.groups || '';
     if(groups.direction === '///') return undefined;
     let windDelta = 0;
-    let magWindDirection = undefined;
+    let magWindDirection = undefined,
+        magVariationStart = undefined,
+        magVariationEnd = undefined;
     if(groups.direction !== 'VRB'){
-      let magWindDirection = magVariation + +groups.direction;
-      if(magWindDirection > 360) magWindDirection -= 360;
-      if(magWindDirection < 0) magWindDirection += 360;
-      windDelta = this.getWindDelta(magWindDirection, runwayHeading);
+      magWindDirection = this.applyMagVariation(magVariation, +groups.direction);
+      if(groups.variationStart && groups.variationEnd){
+        magVariationStart = this.applyMagVariation(magVariation, +groups.variationStart);
+        magVariationEnd = this.applyMagVariation(magVariation, +groups.variationEnd);
+      }
     }
 
     return {
-      trueWindDirection: groups.direction !== 'VRB' ? +groups.direction : undefined,
-      nominalWindSpeed: +groups.nominalSpeed,
+      trueWindDirection: groups.direction,
+      nominalWindSpeed: +groups.nominal_speed,
       gustSpeed: +groups.gustSpeed,
       magWindDirection: magWindDirection,
-      headWindSpeed: groups.direction !== 'VRB' ? this.getHeadWind(windDelta, +groups.nominalSpeed) : 0,
-      leftWindSpeed: groups.direction !== 'VRB' ? this.getLeftWind(windDelta, +groups.nominalSpeed) : 0,
+      headWindSpeed: groups.direction !== 'VRB' ? this.getHeadWind(windDelta, +groups.nominal_speed) : 0,
+      leftWindSpeed: groups.direction !== 'VRB' ? this.getLeftWind(windDelta, +groups.nominal_speed) : 0,
       windDelta: Math.abs(windDelta),
+      variationStart: magVariationStart,
+      variationEnd: magVariationEnd
     };
   };
 
@@ -126,5 +131,12 @@ export class MetarResolver {
       descriptor: weatherCondition.substring(1, 3),
       phenomena: weatherCondition.substring(3),
     })) || undefined;
+  }
+
+  private static applyMagVariation(magVariation: number, trueDirection: number): number {
+    let magWindDirection = trueDirection + magVariation;
+    if(magWindDirection > 360) magWindDirection -= 360;
+    if(magWindDirection < 0) magWindDirection += 360;
+    return magWindDirection;
   }
 }

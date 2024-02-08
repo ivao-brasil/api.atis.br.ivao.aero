@@ -204,10 +204,18 @@ export class AtisController {
         }
         let windCompose = '';
         if(splittedMetar.wind){
-            if(splittedMetar.wind!.trueWindDirection){
+            if(splittedMetar.wind!.trueWindDirection === 'VRB'){
                 windCompose = `VARIABLE AT ${splittedMetar.wind!.nominalWindSpeed} KT`;
             }
-            windCompose = `${splittedMetar.wind!.magWindDirection} AT ${splittedMetar.wind!.nominalWindSpeed} KT${splittedMetar.wind!.gustSpeed! > 0 ? ` GUSTING AT ${splittedMetar.wind!.gustSpeed} KT` : ''}`;
+            else {
+                windCompose = `${splittedMetar.wind!.magWindDirection} AT ${splittedMetar.wind!.nominalWindSpeed} KT`;
+                if(splittedMetar.wind!.gustSpeed! > 0) {
+                    windCompose = `${windCompose} GUSTING AT ${splittedMetar.wind!.gustSpeed} KT`;
+                }
+                if(splittedMetar.wind!.variationStart && splittedMetar.wind!.variationEnd){
+                    windCompose = `${windCompose} VARIABLE BETWEEN ${splittedMetar.wind!.variationStart} AND ${splittedMetar.wind!.variationEnd}`;
+                }
+            }
         }
         
         let visiblitityCompose = '';
