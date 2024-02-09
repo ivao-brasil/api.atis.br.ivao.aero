@@ -1,5 +1,5 @@
 import { PartiallySplittedMetar } from "src/interfaces/partially-splitted-metar.interface";
-import { SplittedMetar, Visibility, WeatherCondition, Wind } from "src/interfaces/splitted-metar.interface";
+import { SplittedMetar, TimeInformation, Visibility, WeatherCondition, Wind } from "src/interfaces/splitted-metar.interface";
 
 export class MetarResolver {
   private static readonly dataExpressions: {ICAO: any, FAA: any} = {
@@ -17,21 +17,27 @@ export class MetarResolver {
     return this.dataExpressions[type].main.exec(metar)?.groups || {};
   }
 
-  static processSplittedMetar(partiallySplittedMetar: PartiallySplittedMetar, runwayHeading: number, magVariation: number, type: 'ICAO' | 'FAA'): SplittedMetar {
+  static processSplittedMetar(partiallySplittedMetar: PartiallySplittedMetar, runwayHeading: number, magVariation: number, type: 'ICAO' | 'FAA', sunRise: Date, sunSet: Date): SplittedMetar {
     const processedMetar: SplittedMetar = this.processMetarMainInfo(partiallySplittedMetar, type);
     processedMetar.wind = this.transformWind(partiallySplittedMetar.wind!, magVariation ?? 0, runwayHeading);
-    processedMetar.time = this.transformDatetime(partiallySplittedMetar.timestamp!);
+    processedMetar.time = this.transformDatetime(partiallySplittedMetar.timestamp!, sunRise, sunSet);
     processedMetar.weatherConditions = this.transformWeatherConditions(partiallySplittedMetar.weather_state!);
     processedMetar.visibility = this.transformVisibility(partiallySplittedMetar.visibility!, partiallySplittedMetar.rvr!, partiallySplittedMetar.clouds!, !!partiallySplittedMetar.is_cavok);
     return processedMetar;
   }
 
-  private static transformDatetime(metarTime: string): Date {
+  private static transformDatetime(metarTime: string, sunRise: Date, sunSet: Date): TimeInformation {
     const date = new Date();
     date.setUTCDate(+metarTime.substring(0, 2));
     date.setUTCHours(+metarTime.substring(2, 4));
     date.setUTCMinutes(+metarTime.substring(4, 6));
-    return date;
+    return {
+      day: +metarTime.substring(0, 2),
+      hour: +metarTime.substring(2, 4),
+      minute: +metarTime.substring(4, 6),
+      time: date,
+      dayLightPeriod: date.getUTCHours() >= sunRise.getUTCHours() && date.getUTCHours() < sunSet.getUTCHours() ? 'DAYLIGHT' : 'NIGHTTIME',
+    };
   };
 
   private static transformVisibility(visibility: string, rvr: string, clouds: string, isCavok: boolean): Visibility {

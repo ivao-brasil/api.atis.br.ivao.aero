@@ -163,8 +163,14 @@ export class AtisController {
         const runways:any = {};
         runwayParams.forEach((singleRunwayParams: any) => {
             if(!(singleRunwayParams.runway in runways)){
+                const sunSet = new Date();
+                sunSet.setHours(18);
+                sunSet.setMinutes(0);
+                const sunRise = new Date();
+                sunRise.setHours(6);
+                sunRise.setMinutes(0);
                 runways[`${singleRunwayParams.runway}`] = {
-                    splittedMetar: MetarResolver.processSplittedMetar(partialSplittedMetar, singleRunwayParams.magnetic_hdg, magVariation, 'ICAO')
+                    splittedMetar: MetarResolver.processSplittedMetar(partialSplittedMetar, singleRunwayParams.magnetic_hdg, magVariation, 'ICAO', sunRise, sunSet),
                 };
             }
             runways[`${singleRunwayParams.runway}`][singleRunwayParams.type] = {
@@ -240,6 +246,6 @@ export class AtisController {
             }
         }
         visiblitityCompose += splittedMetar?.visibility!.cloudLayers.map((cloudLayer: any) => `${cloudLayer.type} ${cloudLayer.height.toString().padStart(3,'0')}`).join(' ') || '';
-        return `${airportIcao.toUpperCase()} AUTOMATIC ATIS ${charId} ${splittedMetar!.time!.getUTCHours().toString().padStart(2, '0')}${splittedMetar!.time!.getUTCMinutes().toString().padStart(2, '0')}Z EXPECT ARRIVAL ${landingRunways.join(' / ')} DEPARTURE ${takeoffRunways.join(' / ')} WIND ${windCompose} VIS ${visiblitityCompose} ${splittedMetar!.altimeter} ${this.units[type].pressure} ${airportRemarks ?? ''}END OF ATIS ${charId}`;
+        return `${airportIcao.toUpperCase()} AUTOMATIC ATIS ${charId} ${splittedMetar!.time!.hour.toString().padStart(2, '0')}${splittedMetar!.time!.minute.toString().padStart(2, '0')}Z EXPECT ARRIVAL ${landingRunways.join(' / ')} DEPARTURE ${takeoffRunways.join(' / ')} WIND ${windCompose} VIS ${visiblitityCompose} ${splittedMetar!.altimeter} ${this.units[type].pressure} ${airportRemarks ?? ''}END OF ATIS ${charId}`;
     }
 }

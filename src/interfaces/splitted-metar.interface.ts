@@ -1,15 +1,22 @@
 export interface SplittedMetar {
   wind?: Wind,
-  time?: Date,
+  time?: TimeInformation,
   visibility?: Visibility,
   airport?: string,
   isAuto?: string,
   weatherConditions?: WeatherCondition[],
   temperature?: number,
   drewPoint?: number,
-  dayLightPeriod?: 'DAYLIGHT' | 'NIGHTTIME'
   altimeter?: string,
   remarks?: string[]
+}
+
+export interface TimeInformation {
+  day: number,
+  hour: number,
+  minute: number
+  time? : Date,
+  dayLightPeriod?: 'DAYLIGHT' | 'NIGHTTIME',
 }
 
 export interface Wind {
