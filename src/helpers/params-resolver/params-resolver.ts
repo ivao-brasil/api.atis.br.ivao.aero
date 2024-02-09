@@ -1,6 +1,13 @@
-import { SplittedMetar } from "src/interfaces/splitted-metar.interface";
-
+import { SplittedMetar, Wind } from "src/interfaces/splitted-metar.interface";
+import { MetarResolver } from "../metar-resolver/metar-resolver";
 export class ParamsResolver {
+
+  private static readonly customResolver: any = {
+    customHeadWindSpeed({ wind }: SplittedMetar, magHeading: number) {
+      if(!wind || !wind.magWindDirection || !wind.nominalWindSpeed) return 0;
+      return MetarResolver.getHeadWind(MetarResolver.getWindDelta(wind.magWindDirection, magHeading), wind.nominalWindSpeed);
+    }
+  }
 
   static resolveParamsBasedOnMetar(paramsTree: any, splittedMetar: SplittedMetar): boolean {
     return this.resolveTree(paramsTree, splittedMetar);
@@ -45,13 +52,13 @@ export class ParamsResolver {
 
   private static checkGreaterThan(type: string, condition: string, splittedMetar: any): boolean {
     const value = this.getMetarValue(type,splittedMetar);
-    if(value == null) return false;
+    if(value == null || isNaN(value)) return false;
     return +value > +condition;
   };
 
   private static checkLessThan(type: string, condition: string, splittedMetar: any): boolean {
     const value = this.getMetarValue(type,splittedMetar);
-    if(value == null) return false;
+    if(value == null || isNaN(value)) return false;
     return +value < +condition;
   };
 
@@ -67,6 +74,9 @@ export class ParamsResolver {
     let currentObj = splittedMetar;
 
     for (const key of splittedType) {
+      if (key in this.customResolver) {
+        return this.customResolver[key](splittedMetar, splittedType.at(-1));
+      }
       if (currentObj.hasOwnProperty(key)) {
         currentObj = currentObj[key];
       } else {

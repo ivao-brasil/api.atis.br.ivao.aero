@@ -28,7 +28,8 @@ export interface Wind {
   leftWindSpeed?: number,
   windDelta?: number,
   variationStart?: number,
-  variationEnd?: number
+  variationEnd?: number,
+  customHeadWindSpeed?: any,
 }
 
 export interface Visibility {
