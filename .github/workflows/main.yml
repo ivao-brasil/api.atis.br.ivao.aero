@@ -37,6 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: main
     steps:
+    - name: Listar Arquivos e Diretórios
+      run: ls -la
     - name: 📂 Sync files
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
