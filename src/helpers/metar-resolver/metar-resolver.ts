@@ -100,12 +100,13 @@ export class MetarResolver {
   private static transformWind(metarWind: string, magVariation: number, runwayHeading: number): Wind | undefined {
     const groups: any = this.dataExpressions.ICAO.wind.exec(metarWind)?.groups || '';
     if(groups.direction === '///') return undefined;
-    let windDelta = 0;
     let magWindDirection = undefined,
         magVariationStart = undefined,
-        magVariationEnd = undefined;
+        magVariationEnd = undefined,
+        windDelta = 0;
     if(groups.direction !== 'VRB'){
       magWindDirection = this.applyMagVariation(magVariation, +groups.direction);
+      windDelta = this.getWindDelta(magWindDirection, runwayHeading);
       if(groups.variationStart && groups.variationEnd){
         magVariationStart = this.applyMagVariation(magVariation, +groups.variationStart);
         magVariationEnd = this.applyMagVariation(magVariation, +groups.variationEnd);

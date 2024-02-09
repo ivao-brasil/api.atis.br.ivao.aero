@@ -117,14 +117,13 @@ export class AtisController {
                         ]
                     });
                     const partialSplittedMetar:PartiallySplittedMetar = MetarResolver.splitMetar(allAirportsRunwaysParams[airportIcao].metar, 'ICAO');
-                    const splittedMetar = MetarResolver.processSplittedMetar(partialSplittedMetar, 0, airport?.dataValues.mag_variation, 'ICAO');
-                    const runwaysList = await this.handleRunway(allAirportsRunwaysParams[airportIcao].runways, splittedMetar, airport?.dataValues.mag_variation);
+                    const runwaysList = await this.handleRunway(allAirportsRunwaysParams[airportIcao].runways, partialSplittedMetar, airport?.dataValues.mag_variation);
                     const charId = airport!.dataValues.Atis?.dataValues.char_id ? this.incrementChar(airport!.dataValues.Atis.dataValues.char_id) : airportIcao[3];
                     const addedAtis = {
                         airport_icao: airportIcao,
                         char_id: charId,
                         runways: runwaysList,
-                        digital_atis: this.buildDigitalAtis(airportIcao, splittedMetar, charId, runwaysList, airport?.dataValues.remarks, 'ICAO'),
+                        digital_atis: this.buildDigitalAtis(airportIcao, charId, runwaysList, airport?.dataValues.remarks, 'ICAO'),
                         metar: allAirportsRunwaysParams[airportIcao].metar
                     };
                     
@@ -153,21 +152,23 @@ export class AtisController {
         return await atisDatabase.models.Procedures.findAll();
     }
 
-    private async handleRunway(runwayParams: any, splittedMetar: SplittedMetar, magVariation: number) {
+    private async handleRunway(runwayParams: any, splittedMetar: PartiallySplittedMetar, magVariation: number) {
         let runways: any = this.handleRunwayWindParams(runwayParams, splittedMetar, magVariation);
         runways = await this.handleRunwayProcedures(runwayParams[0].airport_icao, runways);
 
         return runways;
     }
 
-    private handleRunwayWindParams(runwayParams: any, splittedMetar: SplittedMetar, magVariation: number): any {
+    private handleRunwayWindParams(runwayParams: any, partialSplittedMetar: PartiallySplittedMetar, magVariation: number): any {
         const runways:any = {};
         runwayParams.forEach((singleRunwayParams: any) => {
             if(!(singleRunwayParams.runway in runways)){
-                runways[`${singleRunwayParams.runway}`] = {};
+                runways[`${singleRunwayParams.runway}`] = {
+                    splittedMetar: MetarResolver.processSplittedMetar(partialSplittedMetar, singleRunwayParams.magnetic_hdg, magVariation, 'ICAO')
+                };
             }
             runways[`${singleRunwayParams.runway}`][singleRunwayParams.type] = {
-                active: ParamsResolver.resolveParamsBasedOnMetar(singleRunwayParams.param, splittedMetar)
+                active: ParamsResolver.resolveParamsBasedOnMetar(singleRunwayParams.param, runways[`${singleRunwayParams.runway}`].splittedMetar)
             };
         });
         return runways;
@@ -191,19 +192,27 @@ export class AtisController {
         return this.alphabet[index + 1 % this.alphabet.length]
     }
     
-    private buildDigitalAtis(airportIcao: string, splittedMetar: SplittedMetar, charId: string, runwaysList: any, airportRemarks: any, type: 'ICAO' | 'FAA'): string {
+    private buildDigitalAtis(airportIcao: string, charId: string, runwaysList: any, airportRemarks: any, type: 'ICAO' | 'FAA'): string {
         const landingRunways: any[] = [];
         const takeoffRunways: any[] = [];
+        let splittedMetar: SplittedMetar | undefined = undefined;
         for (const runway in runwaysList) {
-            if (runwaysList[runway].LANDING && runwaysList[runway].LANDING.active && runwaysList[runway].LANDING.procedures) {
-                landingRunways.push(`${runwaysList[runway].LANDING.procedures?.join(' ') || ''} RWY ${runway}`);
+            if (runwaysList[runway].LANDING && runwaysList[runway].LANDING.active) {
+                let runwayText = `RWY ${runway}`;
+                if(runwaysList[runway].LANDING.procedures){
+                    runwayText = `${runwaysList[runway].LANDING.procedures.join(' ')} ${runwayText}`;
+                }
+                landingRunways.push(runwayText);
             }
             if (runwaysList[runway].TAKEOFF && runwaysList[runway].TAKEOFF.active) {
-                takeoffRunways.push(`${runwaysList[runway].TAKEOFF.procedures?.join(' ') || ''} RWY ${runway}`);
+                takeoffRunways.push(`RWY ${runway}`);
+            }
+            if (!splittedMetar) {
+                splittedMetar = runwaysList[runway].splittedMetar;
             }
         }
         let windCompose = '';
-        if(splittedMetar.wind){
+        if(splittedMetar && splittedMetar.wind){
             if(splittedMetar.wind!.trueWindDirection === 'VRB'){
                 windCompose = `VARIABLE AT ${splittedMetar.wind!.nominalWindSpeed} KT`;
             }
@@ -219,18 +228,18 @@ export class AtisController {
         }
         
         let visiblitityCompose = '';
-        if(splittedMetar.visibility){
+        if(splittedMetar && splittedMetar.visibility){
             if(splittedMetar.visibility!.isCavok){
                 visiblitityCompose = 'CAVOK ';
             }
             else {
-                visiblitityCompose = `${splittedMetar.visibility!.horizontalVisibility!.general} ${this.units[type].length} `;
+                visiblitityCompose = `${splittedMetar.visibility!.horizontalVisibility!.general}${this.units[type].length} `;
                 if(splittedMetar.visibility!.horizontalVisibility!.directional.length > 0){
                     visiblitityCompose += splittedMetar.visibility!.horizontalVisibility!.directional.map((direction: any) => `${direction.direction} ${direction.visibility} ${this.units[type].length} `).join(' ');
                 }
             }
         }
-        visiblitityCompose += splittedMetar.visibility!.cloudLayers.map((cloudLayer: any) => `${cloudLayer.type} ${cloudLayer.height} ${this.units[type].length} `).join(' ');
-        return `${airportIcao.toUpperCase()} AUTOMATIC ATIS ${charId} ${splittedMetar.time!.getUTCHours().toString().padStart(2, '0')}${splittedMetar.time!.getUTCMinutes().toString().padStart(2, '0')}Z EXPECT ARRIVAL ${landingRunways.join(' / ')} DEPARTURE ${takeoffRunways.join(' / ')} WIND ${windCompose} VIS ${visiblitityCompose}${splittedMetar.altimeter} ${this.units[type].pressure} ${airportRemarks ?? ''} END OF ATIS ${charId}`;
+        visiblitityCompose += splittedMetar?.visibility!.cloudLayers.map((cloudLayer: any) => `${cloudLayer.type} ${cloudLayer.height.toString().padStart(3,'0')}`).join(' ') || '';
+        return `${airportIcao.toUpperCase()} AUTOMATIC ATIS ${charId} ${splittedMetar!.time!.getUTCHours().toString().padStart(2, '0')}${splittedMetar!.time!.getUTCMinutes().toString().padStart(2, '0')}Z EXPECT ARRIVAL ${landingRunways.join(' / ')} DEPARTURE ${takeoffRunways.join(' / ')} WIND ${windCompose} VIS ${visiblitityCompose} ${splittedMetar!.altimeter} ${this.units[type].pressure} ${airportRemarks ?? ''}END OF ATIS ${charId}`;
     }
 }

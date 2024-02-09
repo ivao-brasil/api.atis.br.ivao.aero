@@ -44,15 +44,21 @@ export class ParamsResolver {
   };
 
   private static checkGreaterThan(type: string, condition: string, splittedMetar: any): boolean {
-    return +this.getMetarValue(type,splittedMetar) > +condition;
+    const value = this.getMetarValue(type,splittedMetar);
+    if(value == null) return false;
+    return +value > +condition;
   };
 
   private static checkLessThan(type: string, condition: string, splittedMetar: any): boolean {
-    return +this.getMetarValue(type,splittedMetar) < +condition;
+    const value = this.getMetarValue(type,splittedMetar);
+    if(value == null) return false;
+    return +value < +condition;
   };
 
   private static checkEqualsTo(type: string, condition: string, splittedMetar: any): boolean {
-    return this.getMetarValue(type,splittedMetar) == condition;
+    const value = this.getMetarValue(type,splittedMetar);
+    if(value == null) return false;
+    return value == condition;
   };
 
   private static getMetarValue(type: string, splittedMetar: any): any {
