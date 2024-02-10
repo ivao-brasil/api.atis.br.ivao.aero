@@ -48,7 +48,7 @@ export interface Visibility {
   isCavok: boolean,
   cloudLayers: {
     type: 'NCD' | 'NSC' | 'VV' | 'FEW' | 'BKN' | 'SCT' | 'OVC',
-    height: number
+    height: string
   }[]
 }
 

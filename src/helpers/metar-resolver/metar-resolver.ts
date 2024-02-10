@@ -55,18 +55,11 @@ export class MetarResolver {
       rvr: +rvr.substring(3, 7),
       trend: rvr.substring(7) as 'D' | 'U' | 'N',
     })) || undefined;
-    const cloudLayers = clouds.trim().split(' ').map((cloudLayer: string): { type: 'NCD' | 'NSC' | 'VV' | 'FEW' | 'BKN' | 'SCT' | 'OVC', height: number } => {
-      const cloudType = cloudLayer.substring(0, 3);
-      return {
-        type: cloudType as 'NCD' | 'NSC' | 'VV' | 'FEW' | 'BKN' | 'SCT' | 'OVC',
-        height: cloudLayer.substring(3) === '///' ? 0 : +cloudLayer.substring(3),
-      };
-    });
     return {
       horizontalVisibility: visibilityGroup,
       rvr: rvrGroup,
       isCavok: isCavok,
-      cloudLayers: cloudLayers,
+      cloudLayers: this.processCloudsLayers(clouds),
     };
   }
 
@@ -145,5 +138,15 @@ export class MetarResolver {
     if(magWindDirection > 360) magWindDirection -= 360;
     if(magWindDirection < 0) magWindDirection += 360;
     return magWindDirection;
+  }
+
+  private static processCloudsLayers(clouds: string): { type: 'NCD' | 'NSC' | 'VV' | 'FEW' | 'BKN' | 'SCT' | 'OVC', height: string }[] {
+    return clouds.trim().split(' ').map((cloudLayer: string): { type: 'NCD' | 'NSC' | 'VV' | 'FEW' | 'BKN' | 'SCT' | 'OVC', height: string } => {
+      const cloudType = cloudLayer.substring(0, 3);
+      return {
+        type: cloudType as 'NCD' | 'NSC' | 'VV' | 'FEW' | 'BKN' | 'SCT' | 'OVC',
+        height: cloudLayer.substring(3) === '///' ? '000' : cloudLayer.substring(3, 6).padStart(3, '0').concat(cloudLayer.substring(6)),
+      };
+    });
   }
 }
