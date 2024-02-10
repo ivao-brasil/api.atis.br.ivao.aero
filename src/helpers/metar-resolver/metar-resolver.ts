@@ -4,7 +4,7 @@ import { SplittedMetar, TimeInformation, Visibility, WeatherCondition, Wind } fr
 export class MetarResolver {
   private static readonly dataExpressions: {ICAO: any, FAA: any} = {
     ICAO: {
-      main: /^(?<type>METAR\s|SPECI\s)?(?<airport>\w{4})\s(?<timestamp>\d{6}Z)\s(?<is_auto>AUTO\s)?(?<wind>(?:(?:P?[\d\/]{5}(?:G[\d\/]{2})?KT)|VRB[\d\/]{2}KT)(?:\s[\d\/]{3}V[\d\/]{3})?)\s(?<is_cavok>CAVOK\s)?(?<visibility>[\d\/]{4}\s(?:\d{4}[A-Z]{1,2}\s)?)?(?<rvr>(?:R[\d\/]{2}\w?\/P?[\d\/]{4}(?:V[\d\/]{4})?[DUN]?\s)*)?(?<weather_state>(?:(?:\+|\-|V)?(?:MI|PR|BC|DR|BL|SH|TS|FZ)?[A-Z\/]{2}\s)*)?(?<clouds>NCD\s|NSC\s|VV[\d\/]{3}\s|(?:(?:FEW|BKN|SCT|OVC|\/{3})[\d\/]{0,3}(?:CB|TCU|\/{3})?\s)*)?(?<temperature>M?[\d\/]{2}\/M?[\d\/]{2}\s)(?<pressure>Q[\d\/]{4})\s?(?<remarks>.*)$/,
+      main: /^(?<type>METAR\s|SPECI\s)?(?<airport>\w{4})\s(?<timestamp>\d{6}Z)\s(?<is_auto>AUTO\s)?(?<wind>(?:(?:P?[\d\/]{5}(?:G[\d\/]{2})?KT)|VRB[\d\/]{2}KT)(?:\s[\d\/]{3}V[\d\/]{3})?)\s(?<is_cavok>CAVOK\s)?(?<visibility>[\d\/]{4}\s(?:\d{4}[A-Z]{1,2}\s)?)?(?<rvr>(?:R[\d\/]{2}\w?\/P?[\d\/]{4}(?:V[\d\/]{4})?[DUN]?\s)*)?(?<weather_state>(?:(?:\+|\-|VC)?(?:MI|PR|BC|DR|BL|SH|TS|FZ)?[A-Z\/]{2}\s)*)?(?<clouds>NCD\s|NSC\s|VV[\d\/]{3}\s|(?:(?:FEW|BKN|SCT|OVC|\/{3})[\d\/]{0,3}(?:CB|TCU|\/{3})?\s)*)?(?<temperature>M?[\d\/]{2}\/M?[\d\/]{2}\s)(?<pressure>Q[\d\/]{4})\s?(?<remarks>.*)$/,
       wind: /^(?<direction>(?:VRB|\d{3}|\/{3}))(?<nominal_speed>P?[\d\/]{2})G?(?<gust_speed>P?[\d\/]{2})?KT\s?(?:(?<variation_start>[\d\/]{3}))?V?(?:(?<variation_end>[\d\/]{3}))?$/,
       temperature: /(?<temperature>M?\d{2})\/(?<drewPoint>M?\d{2})/
     },
@@ -132,12 +132,12 @@ export class MetarResolver {
     };
   };
 
-  private static transformWeatherConditions(weatherString: string): WeatherCondition[] | undefined {
+  private static transformWeatherConditions(weatherString: string): WeatherCondition[] {
     return weatherString?.trim().split(' ').map<WeatherCondition>((weatherCondition: string): WeatherCondition => ({
       intensity: weatherCondition.charAt(0),
       descriptor: weatherCondition.substring(1, 3),
       phenomena: weatherCondition.substring(3),
-    })) || undefined;
+    })) || [];
   }
 
   private static applyMagVariation(magVariation: number, trueDirection: number): number {
