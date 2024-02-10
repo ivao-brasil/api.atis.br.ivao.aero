@@ -21,7 +21,7 @@ export class ParamsResolver {
           and: 'every',
           or: 'some',
         };
-        return this.resolveTree(node[childNode], splittedMetar, operatorMap[childNode]);
+        return this.resolveTree(node[childNode], splittedMetar, operatorMap[childNode.split('_')[0]]);
       } else {
         return this.resolveLeaf(childNode, node[childNode], splittedMetar);
       }

@@ -101,34 +101,39 @@ export class AtisController {
             });
     
             await Object.keys(allAirportsRunwaysParams).forEach(async (airportIcao) => {
-                if(allAirportsRunwaysParams[airportIcao].metar){
-                    const airport = await atisDatabase.models.Airport.findOne({
-                        where: {
-                            airport_icao: airportIcao
-                        },
-                        include: [
-                            {
-                                as: 'Atis',
-                                model: atisDatabase.models.Atis,
-                                attributes: ['char_id'],
-                                on: { general_id: Sequelize.literal('`Atis`.`general_id` = `Airport`.`current_atis`') },
-                                required: false
-                            }
-                        ]
-                    });
-                    const partialSplittedMetar:PartiallySplittedMetar = MetarResolver.splitMetar(allAirportsRunwaysParams[airportIcao].metar, 'ICAO');
-                    const runwaysList = await this.handleRunway(allAirportsRunwaysParams[airportIcao].runways, partialSplittedMetar, airport?.dataValues.mag_variation);
-                    const charId = airport!.dataValues.Atis?.dataValues.char_id ? this.incrementChar(airport!.dataValues.Atis.dataValues.char_id) : airportIcao[3];
-                    const addedAtis = {
-                        airport_icao: airportIcao,
-                        char_id: charId,
-                        runways: runwaysList,
-                        digital_atis: this.buildDigitalAtis(airportIcao, charId, runwaysList, airport?.dataValues.remarks, 'ICAO'),
-                        metar: allAirportsRunwaysParams[airportIcao].metar
-                    };
-                    
-                    await atisDatabase.models.Atis.create(addedAtis);
-                    this.logger.log(`Added ATIS for ${airportIcao} with char_id ${charId}`);
+                try {
+                    if(allAirportsRunwaysParams[airportIcao].metar){
+                        const airport = await atisDatabase.models.Airport.findOne({
+                            where: {
+                                airport_icao: airportIcao
+                            },
+                            include: [
+                                {
+                                    as: 'Atis',
+                                    model: atisDatabase.models.Atis,
+                                    attributes: ['char_id'],
+                                    on: { general_id: Sequelize.literal('`Atis`.`general_id` = `Airport`.`current_atis`') },
+                                    required: false
+                                }
+                            ]
+                        });
+                        const partialSplittedMetar:PartiallySplittedMetar = MetarResolver.splitMetar(allAirportsRunwaysParams[airportIcao].metar, 'ICAO');
+                        const runwaysList = await this.handleRunway(allAirportsRunwaysParams[airportIcao].runways, partialSplittedMetar, airport?.dataValues.mag_variation);
+                        const charId = airport!.dataValues.Atis?.dataValues.char_id ? this.incrementChar(airport!.dataValues.Atis.dataValues.char_id) : airportIcao[3];
+                        const addedAtis = {
+                            airport_icao: airportIcao,
+                            char_id: charId,
+                            runways: runwaysList,
+                            digital_atis: this.buildDigitalAtis(airportIcao, charId, runwaysList, airport?.dataValues.remarks, 'ICAO'),
+                            metar: allAirportsRunwaysParams[airportIcao].metar
+                        };
+                        
+                        await atisDatabase.models.Atis.create(addedAtis);
+                        this.logger.log(`Added ATIS for ${airportIcao} with char_id ${charId}`);
+                    }
+                }
+                catch(e){
+                    this.logger.error(e);
                 }
             });
         }
