@@ -44,7 +44,7 @@ export class ParamsController {
             airport_icao: airport,
             runway: runway,
             type: type,
-            params: param,
+            param: param,
             updated_at: new Date()
         }, {
             where: {
